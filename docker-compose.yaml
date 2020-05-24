@@ -1,10 +1,10 @@
 version: "2.4"
 
 services:
-  app:
+  dev:
     build: .
     ports:
       - "8080:8080"
     volumes:
-      - ./:/app
-    command: yarn serve
+      - ./:/app    
+    command: quasar dev -m pwa

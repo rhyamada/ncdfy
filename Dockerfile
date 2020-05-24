@@ -1,6 +1,5 @@
 FROM node:lts
+RUN npm install -g @vue/cli @vue/cli-init @quasar/cli
 WORKDIR /app
-COPY package*.json ./
+COPY . /app
 RUN npm install
-COPY . .
-CMD ["yarn","serve"]
