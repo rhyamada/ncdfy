@@ -1,16 +1,42 @@
 <template>
   <div
-    class="q-pa-md col-6"
+    class="q-pa-xs col-6"
     v-if="book"
   >
-    <q-card>
-      <q-card-section>
-        <div>
+    <q-card
+      class="mybook"
+      :style="{ backgroundImage: `url('${this.cover}')` }"
+    >
+      <q-card-section
+        class="row  fit justify-between"
+        style="min-height: 45vh;background: rgba(255,255,255,0.6)"
+      >
+        <div
+          class="full-width text-right"
+          style="opacity: 0.8;"
+        >
+          <q-btn
+            flat
+            dense
+            color="warning"
+            @click="remove"
+            v-if="book.edit"
+            icon="delete"
+          />
+          <q-btn
+            flat
+            dense
+            color="primary"
+            @click="book.edit = !book.edit"
+            :icon="book.edit?'turned_in_not':'turned_in'"
+          />
+        </div>
+        <div class="full-width text-center">
           {{book.title||'New Title'}}
           <q-popup-edit
-            v-model="book.title"
-            buttons
             v-if="book.edit"
+            v-model="book"
+            buttons
           >
             <q-select
               :value="book.title"
@@ -20,7 +46,7 @@
               fill-input
               :options="options"
               @filter="filterFn"
-              hint="burcar livros por titulo, autor e assunto"
+              hint="Buscar livros por titulo, autor ou assunto"
               autofocus
             >
               <template v-slot:option="scope">
@@ -47,62 +73,69 @@
             </q-select>
           </q-popup-edit>
         </div>
-        <div class="text-right">
+        <div class="full-width text-right">
           {{book.authors||'Autores'}}
           <q-popup-edit
+            auto-save
             v-model="book.authors"
-            buttons
             v-if="book.edit"
           >
             <q-input
               v-model="book.authors"
-              hint="autor"
+              hint="Autores:"
               dense
               autofocus
             />
           </q-popup-edit>
         </div>
-        <div v-if="book.publisher">
-          <span>{{book.publisher}}</span>, <span>{{book.publishedDate}}</span>
+        <div
+          v-if="book.publisher"
+          class="full-width text-center"
+        >
+          <span>{{book.publisher}}</span>,
+          <span>{{book.publishedDate}}</span>
         </div>
-        <div>
+        <div class="full-width text-center">
           Meta
           <span>
             {{d2s(book.target)}}
             <q-popup-edit
+              auto-save
               v-model="book.target"
-              buttons
             >
               <q-date
                 v-model="book.target"
+                flat
                 minimal
+                hint="Meta da leitura"
+                autofocus
               />
             </q-popup-edit>
           </span>
         </div>
-        <div class="text-subtitle">
-          Em
+        <div class="full-width">
           <span>
-            {{d2s(book.readDate)}}
+            {{d2s(readDate)}}
             <q-popup-edit
-              v-model="book.readDate"
-              buttons
+              auto-save
+              v-model="readDate"
             >
               <q-date
-                v-model="book.readDate"
-                hint="Ultima data lida"
-                :options="past"
+                v-model="readDate"
+                flat
                 minimal
-              />
+                hint="Data da leitura"
+                :options="past"
+                :events="Object.keys(this.book.progress)"
+              >
+              </q-date>
             </q-popup-edit>
-          </span>lido
-        </div>
-        <div class="text-subtitle">
+          </span> lido
           <span>
             {{readPages}}
             <q-popup-edit
+              auto-save
               v-model="readPages"
-              buttons
             >
               <q-input
                 type="number"
@@ -117,8 +150,8 @@
           <span>
             {{book.pageCount}}
             <q-popup-edit
+              auto-save
               v-model="book.pageCount"
-              buttons
               v-if="book.edit"
             >
               <q-input
@@ -130,16 +163,15 @@
               />
             </q-popup-edit>
           </span>
-          (
           <span>
-            {{rate}}
+            ({{rate}}%)
             <q-popup-edit
-              :value="book.readPages"
-              buttons
+              auto-save
+              :value="readPages"
             >
               <q-input
                 type="number"
-                :value="book.rate"
+                :value="rate"
                 @change="irate($event.target.value)"
                 dense
                 autofocus
@@ -147,38 +179,22 @@
               />
             </q-popup-edit>
           </span>
-          % )
           <q-slider
-            v-model="book.readPages"
+            v-model="readPages"
             :min="0"
             :max="book.pageCount"
           />
         </div>
       </q-card-section>
-      <div class="absolute-top-right">
-        <q-btn
-          flat
-          round
-          color="warning"
-          @click="remove"
-          v-if="book.edit"
-          icon="delete"
-        />
-        <q-btn
-          flat
-          round
-          color="primary"
-          @click="book.edit = !book.edit"
-          :icon="book.edit?'turned_in_not':'turned_in'"
-        />
-      </div>
     </q-card>
   </div>
 </template>
 
 <style lang="sass" scoped>
-.my-card
-  height: 50vh
+.mybook
+  background-repeat: no-repeat
+  background-position: center
+  background-size: cover
 </style>
 
 <script>
@@ -190,6 +206,8 @@ export default {
   data: function () {
     return {
       options: [],
+      readDate: null,
+      readPages: 0,
       book: null
     }
   },
@@ -199,33 +217,56 @@ export default {
     } else {
       this.book = this.df({})
     }
+    this.readDate = this.today()
   },
   computed: {
-    rate () {
-      return Math.round(100 * this.book.readPages / this.book.pageCount)
+    cover () {
+      return this.book.imageLinks.thumbnail
     },
-    readPages: {
-      get () {
-        return this.book.progress.reduce(
-          (a, b) => { return a > b ? a : b },
-          0)
-      },
-      set (v) {
-
+    rate () {
+      return Math.round(100 * this.readPages / this.book.pageCount)
+    },
+    readDates () {
+      return Object.keys(this.book.progress)
+    },
+    getReadPages () {
+      let r = 0, b = ''
+      for (const [d, v] of Object.entries(this.book.progress)) {
+        if ((b < d) && (d <= this.readDate)) {
+          b = d
+          r = v
+        }
       }
+      return r
     }
   },
   watch: {
     book: {
-      handler (val) {
-        if (this.book.title) {
-          this.$q.localStorage.set(this.id, this.book)
-        }
-      },
+      handler () { this.save() },
       deep: true
+    },
+    readPages () {
+      if (this.getReadPages < this.readPages) {
+        this.book.progress[this.readDate] = this.readPages
+      } else {
+        delete this.book.progress[this.readDate]
+      }
+      this.save()
+    },
+    readDate () {
+      this.readPages = this.getReadPages
     }
   },
   methods: {
+    today () {
+      const x = date.addToDate(new Date(), { hours: -12 })
+      return date.formatDate(new Date(x.getFullYear(), x.getMonth(), x.getDate()), 'YYYY/MM/DD')
+    },
+    save () {
+      if (this.book.title) {
+        this.$q.localStorage.set(this.id, this.book)
+      }
+    },
     remove () {
       this.$q.localStorage.remove(this.id)
       this.book = null
@@ -243,7 +284,7 @@ export default {
         readPages: 0,
         readDate: null,
         target: null,
-        progress: []
+        progress: {}
       }, v)
     },
     d2s (d) {
@@ -251,7 +292,7 @@ export default {
     },
     past (d) {
       const dateFrom = date.addToDate(new Date(), { days: -60 })
-      const dateTo = date.addToDate(new Date(), { days: 1 })
+      const dateTo = new Date()
       return date.isBetweenDates(d, dateFrom, dateTo)
     },
     irate (v) {
