@@ -5,50 +5,68 @@
   >
     <Book
       v-for="id in ids"
-      :key="id"
       :id="id"
+      :key="id"
     />
-    <q-btn
-      round
-      color="primary"
-      @click="novo"
-      class="fixed"
-      style="right: 18px; bottom: 18px"
+    <a
+      href="data:application/json,teste"
+      download="books.json"
+    >data</a>
+    <div
+      class="fixed q-ma-xs"
+      style="right: 0; bottom: 0"
     >
-
-      <q-icon name="add" />
-    </q-btn>
+      <q-btn
+        class="q-ma-xs"
+        round
+        color="primary"
+        @click="open"
+      >
+        <q-icon name="unarchive" />
+      </q-btn>
+      <q-btn
+        class="q-ma-xs"
+        round
+        color="primary"
+        @click="save"
+      >
+        <q-icon name="archive" />
+      </q-btn>
+      <q-btn
+        class="q-ma-xs"
+        round
+        color="primary"
+        @click="novo"
+      >
+        <q-icon name="add" />
+      </q-btn>
+    </div>
   </div>
 </template>
 <script>
 import Book from 'components/Book'
+import { uid } from 'quasar'
 export default {
   name: 'PageIndex',
   components: {
     Book
   },
-  created () {
-    this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
-      if (v.startsWith('b_')) {
-        const i = v.substring(2) | 0
-        if (this.seq <= i) {
-          this.seq = i
-        }
-        return true
-      }
-      return false
-    })
-  },
   data () {
     return {
-      ids: null,
-      seq: 1
+      ids: null
     }
   },
+  created () {
+    this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
+      return v.startsWith('b_')
+    })
+  },
   methods: {
+    save () {
+
+    },
     novo () {
-      this.seq++
-      this.ids.push('b_' + this.seq)
+      this.ids.push('b_' + uid())
     }
   }
 }
