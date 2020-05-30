@@ -53,10 +53,10 @@
                   v-on="scope.itemEvents"
                 >
                   <q-item-section
-                    v-if="scope.opt.imageLinks"
+                    v-if="scope.opt.thumbnail"
                     avatar
                   >
-                    <q-img :src="scope.opt.imageLinks.smallThumbnail" />
+                    <q-img :src="scope.opt.thumbnail" />
                   </q-item-section>
                   <q-item-section>
                     <q-item-label>
@@ -287,7 +287,8 @@ export default {
       update(() => {
         this.options = this.$q.localStorage.getItem(x).items.map((i) => {
           return Object.assign(i.volumeInfo, {
-            cover: i.volumeInfo.imageLinks ? i.volumeInfo.imageLinks.thumbnail : null,
+            cover: i.volumeInfo.imageLinks ? i.volumeInfo.imageLinks.thumbnail.replace('http://', 'https://') : null,
+            thumbnail: i.volumeInfo.imageLinks ? i.volumeInfo.imageLinks.smallThumbnail.replace('http://', 'https://') : null,
             authors: i.volumeInfo.authors ? i.volumeInfo.authors.join(', ') : null,
             publishedDate: i.volumeInfo.publishedDate ? i.volumeInfo.publishedDate.substring(0, 4) : null
           })

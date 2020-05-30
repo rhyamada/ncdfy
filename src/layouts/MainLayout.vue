@@ -1,6 +1,9 @@
 <template>
   <q-layout>
-    <q-header elevated>
+    <q-header
+      v-if="false"
+      elevated
+    >
       <q-toolbar>
         <q-btn
           flat
@@ -15,18 +18,14 @@
       </q-toolbar>
     </q-header>
     <q-drawer
+      v-if="false"
       v-model="leftDrawerOpen"
       show-if-above
       bordered
       content-class="bg-grey-1"
     >
       <q-list>
-        <q-item
-          clickable
-          @click="$q.localStorage.clear()"
-        >
-          Limpar Tudo
-        </q-item>
+        <q-item />
       </q-list>
     </q-drawer>
     <q-page-container>

@@ -66,16 +66,16 @@ export default {
   methods: {
     update () {
       this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
-        return v.startsWith('b_')
+        return v.startsWith('book_')
       })
     },
     novo () {
-      this.ids.push('b_' + uid())
+      this.ids.push('book_' + uid())
     },
     save () {
       const books = {}
       for (const k of this.$q.localStorage.getAllKeys()) {
-        if (k.startsWith('b_')) {
+        if (k.startsWith('book_')) {
           books[k] = this.$q.localStorage.getItem(k)
         }
       }
@@ -85,7 +85,9 @@ export default {
       const reader = new FileReader()
       reader.onload = (e) => {
         for (const [k, v] of Object.entries(JSON.parse(e.target.result))) {
-          this.$q.localStorage.set(k, v)
+          if (k.startsWith('book_')) {
+            this.$q.localStorage.set(k, v)
+          }
         }
         this.update()
       }
