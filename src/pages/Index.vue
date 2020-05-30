@@ -13,6 +13,15 @@
       style="right: 0; bottom: 0"
     >
       <q-btn
+        v-if="saved"
+        class="q-ma-xs"
+        round
+        color="warning"
+        @click="$q.localStorage.clear();update()"
+      >
+        <q-icon name="delete" />
+      </q-btn>
+      <q-btn
         class="q-ma-xs"
         round
         color="primary"
@@ -57,6 +66,7 @@ export default {
   },
   data () {
     return {
+      saved: false,
       ids: null
     }
   },
@@ -65,6 +75,7 @@ export default {
   },
   methods: {
     update () {
+      this.saved = false
       this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
         return v.startsWith('book_')
       })
@@ -79,7 +90,10 @@ export default {
           books[k] = this.$q.localStorage.getItem(k)
         }
       }
-      exportFile('books_' + date.formatDate(new Date(), 'YYYYMMDD') + '.json', JSON.stringify(books), 'application/json')
+      const status = exportFile('books_' + date.formatDate(new Date(), 'YYYYMMDD') + '.json', JSON.stringify(books), 'application/json')
+      if (status === true) {
+        this.saved = true
+      }
     },
     load (event) {
       const reader = new FileReader()
