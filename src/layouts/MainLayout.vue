@@ -2,7 +2,14 @@
   <q-layout>
     <q-header elevated>
       <q-toolbar>
-        <q-btn flat dense round icon="menu" aria-label="Menu" @click="leftDrawerOpen = !leftDrawerOpen"/>
+        <q-btn
+          flat
+          dense
+          round
+          icon="menu"
+          aria-label="Menu"
+          @click="leftDrawerOpen = !leftDrawerOpen"
+        />
         <q-toolbar-title>Menu</q-toolbar-title>
         <div>Ncdfy</div>
       </q-toolbar>
@@ -15,8 +22,11 @@
     >
       <q-list>
         <q-item
-        clickable
-        @click="$q.localStorage.clear()">Limpar Tudo</q-item>
+          clickable
+          @click="$q.localStorage.clear()"
+        >
+          Limpar Tudo
+        </q-item>
       </q-list>
     </q-drawer>
     <q-page-container>

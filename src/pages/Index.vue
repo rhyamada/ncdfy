@@ -8,10 +8,6 @@
       :id="id"
       :key="id"
     />
-    <a
-      href="data:application/json,teste"
-      download="books.json"
-    >data</a>
     <div
       class="fixed q-ma-xs"
       style="right: 0; bottom: 0"
@@ -20,7 +16,7 @@
         class="q-ma-xs"
         round
         color="primary"
-        @click="open"
+        @click="$refs.fileInput.click()"
       >
         <q-icon name="unarchive" />
       </q-btn>
@@ -41,11 +37,19 @@
         <q-icon name="add" />
       </q-btn>
     </div>
+    <input
+      id="open"
+      ref="fileInput"
+      type="file"
+      style="display: none;"
+      accept="application/json"
+      @change="load"
+    >
   </div>
 </template>
 <script>
 import Book from 'components/Book'
-import { uid } from 'quasar'
+import { uid, exportFile, date } from 'quasar'
 export default {
   name: 'PageIndex',
   components: {
@@ -57,16 +61,37 @@ export default {
     }
   },
   created () {
-    this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
-      return v.startsWith('b_')
-    })
+    this.update()
   },
   methods: {
-    save () {
-
+    update () {
+      this.ids = this.$q.localStorage.getAllKeys().filter((v) => {
+        return v.startsWith('b_')
+      })
     },
     novo () {
       this.ids.push('b_' + uid())
+    },
+    save () {
+      const books = {}
+      for (const k of this.$q.localStorage.getAllKeys()) {
+        if (k.startsWith('b_')) {
+          books[k] = this.$q.localStorage.getItem(k)
+        }
+      }
+      exportFile('books_' + date.formatDate(new Date(), 'YYYYMMDD') + '.json', JSON.stringify(books), 'application/json')
+    },
+    load (event) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        for (const [k, v] of Object.entries(JSON.parse(e.target.result))) {
+          this.$q.localStorage.set(k, v)
+        }
+        this.update()
+      }
+      for (const file of event.target.files) {
+        reader.readAsText(file)
+      }
     }
   }
 }
