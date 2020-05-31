@@ -28,7 +28,19 @@ register(process.env.SERVICE_WORKER_FILE, {
   },
 
   updated (/* registration */) {
-    // console.log('New content is available; please refresh.')
+    if (!window.QNotify) {
+      window.location.reload()
+    } else {
+      window.QNotify({
+        message: window.store.getters.text.global.newVersionAvailable,
+        timeout: 10000,
+        type: 'info',
+        actions: [{
+          label: window.store.getters.text.global.refresh,
+          handler: function () { window.location.reload() }
+        }]
+      })
+    }
   },
 
   offline () {
