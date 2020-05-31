@@ -2,15 +2,15 @@
 <template>
   <div
     v-if="book"
-    class="q-pa-xs col-6"
+    class="q-pa-md"
   >
     <q-card
       class="mybook"
       :style="{ backgroundImage: `url('${book.cover}')` }"
     >
       <q-card-section
-        class="row fit items-center q-pa-xs justify-between text-center"
-        style="min-height: 70vw; background: rgba(255,255,244,0.5)"
+        class="row fit items-center q-pa-xs justify-between text-center text-h6"
+        style="min-height: 140vw; background: rgba(255,255,244,0.5)"
       >
         <div
           class="absolute-top-right"
@@ -19,18 +19,20 @@
           <q-btn
             v-if="book.edit"
             flat
+            size="2rem"
             color="warning"
             icon="delete"
             @click="remove"
           />
           <q-btn
             color="primary"
+            size="2rem"
             flat
             :icon="book.edit?'turned_in_not':'turned_in'"
             @click="book.edit = !book.edit"
           />
         </div>
-        <div class="full-width text-subtitle2">
+        <div class="full-width text-h4">
           {{ book.title||'Buscar livros...' }}
           <q-popup-edit
             v-if="book.edit"
@@ -73,7 +75,7 @@
             </q-select>
           </q-popup-edit>
         </div>
-        <div class="full-width text-caption text-right">
+        <div class="full-width text-right">
           {{ book.authors||'Autores' }}
           <q-popup-edit
             v-if="book.edit"
@@ -86,12 +88,12 @@
           </q-popup-edit>
         </div>
         <div
-          v-if="book.publisher"
-          class="full-width text-caption"
+          v-if="book.publisher || book.publishedDate"
+          class="full-width"
         >
           {{ book.publisher }}, {{ book.publishedDate }}
         </div>
-        <div class="full-width text-subtitle2">
+        <div class="full-width">
           Meta {{ d2s(book.target) }}<q-popup-edit v-model="book.target">
             <q-date
               v-model="book.target"
@@ -101,7 +103,7 @@
         </div>
         <div
           v-if="objetivo"
-          class="full-width text-subtitle2"
+          class="full-width"
         >
           Objetivo {{ objetivo }} ({{ Math.round(objetivo*100/book.pageCount) }}%)
         </div>
@@ -171,7 +173,7 @@
 </style>
 
 <script>
-import { date, QPopupEdit, QInput, QDate, QBtn } from 'quasar'
+import { date, QPopupEdit, QInput, QDate } from 'quasar'
 
 QPopupEdit.options.props.contentClass = { default: 'q-pa-xs' }
 QPopupEdit.options.props.autoSave = { type: Boolean, default: true }
@@ -179,9 +181,7 @@ QPopupEdit.options.props.buttons = { type: Boolean, default: true }
 QPopupEdit.options.props.labelSet = { type: String, default: 'Salvar' }
 QPopupEdit.options.props.labelCancel = { type: String, default: 'Cancelar' }
 QDate.options.props.minimal = { type: Boolean, default: true }
-QInput.options.props.dense = { type: Boolean, default: true }
 QInput.options.props.autofocus = { type: Boolean, default: true }
-QBtn.options.props.dense = { type: Boolean, default: true }
 
 export default {
   name: 'Book',

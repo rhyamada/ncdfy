@@ -1,8 +1,5 @@
 <template>
-  <div
-    class="row q-gutter"
-    style="max-width: 500px;"
-  >
+  <div class="row q-gutter">
     <Book
       v-for="id in ids"
       :id="id"
