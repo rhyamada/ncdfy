@@ -12,42 +12,30 @@ register(process.env.SERVICE_WORKER_FILE, {
   // registrationOptions: { scope: './' },
 
   ready (/* registration */) {
-    // console.log('Service worker is active.')
+    console.log('>>>ready')
   },
 
   registered (/* registration */) {
-    // console.log('Service worker has been registered.')
+    console.log('>>>regist')
   },
 
   cached (/* registration */) {
-    // console.log('Content has been cached for offline use.')
+    console.log('>>>cache')
   },
 
   updatefound (/* registration */) {
-    // console.log('New content is downloading.')
+    console.log('>>>found')
   },
 
   updated (/* registration */) {
-    if (!window.QNotify) {
-      window.location.reload()
-    } else {
-      window.QNotify({
-        message: window.store.getters.text.global.newVersionAvailable,
-        timeout: 10000,
-        type: 'info',
-        actions: [{
-          label: window.store.getters.text.global.refresh,
-          handler: function () { window.location.reload() }
-        }]
-      })
-    }
+    console.log('>>>update')
   },
 
   offline () {
-    // console.log('No internet connection found. App is running in offline mode.')
+    console.log('>>>off')
   },
 
   error (/* err */) {
-    // console.error('Error during service worker registration:', err)
+    console.log('>>>err')
   }
 })

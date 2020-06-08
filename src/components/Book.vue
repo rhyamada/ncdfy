@@ -14,14 +14,14 @@
       >
         <div
           class="absolute-top-right"
-          style="transform: translateY(-25%);"
+          style="opacity: 0.7;transform: translateY(-25%);"
         >
           <q-btn
             v-if="book.edit"
             flat
             size="2rem"
             color="warning"
-            icon="delete"
+            icon="delete_outline"
             @click="remove"
           />
           <q-btn
@@ -33,7 +33,7 @@
           />
         </div>
         <div class="full-width text-h4">
-          {{ book.title||'Buscar livros...' }}
+          <span :class="book.edit?'edit':''">{{ book.title||'Buscar livros...' }}</span>
           <q-popup-edit
             v-if="book.edit"
             v-model="book"
@@ -42,11 +42,12 @@
               :value="book.title"
               use-input
               hide-selected
+              new-value-mode="add-unique"
               fill-input
               :options="options"
               hint="Buscar livros por titulo, autor ou assunto"
               autofocus
-              @input="(v) => {book = df(v) }"
+              @input="selectFn"
               @filter="filterFn"
             >
               <template v-slot:option="scope">
@@ -76,7 +77,7 @@
           </q-popup-edit>
         </div>
         <div class="full-width text-right">
-          {{ book.authors||'Autores' }}
+          <span :class="book.edit?'edit':''">{{ book.authors||'Autores' }}</span>
           <q-popup-edit
             v-if="book.edit"
             v-model="book.authors"
@@ -89,37 +90,53 @@
         </div>
         <div
           v-if="book.publisher || book.publishedDate"
-          class="full-width"
+          class="full-width text-caption"
         >
           {{ book.publisher }}, {{ book.publishedDate }}
         </div>
         <div class="full-width">
-          Meta {{ d2s(book.target) }}<q-popup-edit v-model="book.target">
-            <q-date
-              v-model="book.target"
-              :events="Object.keys(book.progress)"
-            />
-          </q-popup-edit>
+          Meta
+          <span class="edit">
+            {{ d2s(book.target) }}<q-popup-edit v-model="book.target">
+              <q-date
+                v-model="book.target"
+                :events="Object.keys(book.progress)"
+              />
+            </q-popup-edit>
+          </span>
+          <span
+            v-if="previsao"
+            class="text-caption"
+          >,
+            (prev. {{ previsao }})
+          </span>
         </div>
         <div
           v-if="objetivo"
           class="full-width"
         >
-          Objetivo {{ objetivo }} ({{ Math.round(objetivo*100/book.pageCount) }}%)
+          Objetivo {{ objetivo }} ( {{ Math.round(100*objetivo/book.pageCount) }}% )
+          <q-btn
+            dense
+            color="primary"
+            flat
+            :icon="check?'check_box':'check_box_outline_blank'"
+            @click="check=!check"
+          />
         </div>
         <div class="full-width">
-          <span>
-            {{ readPages }}
-            <q-popup-edit v-model="readPages">
+          Lidos
+          <span class="edit">
+            {{ readPages }}<q-popup-edit v-model="readPages">
               <q-input
                 v-model.number="readPages"
                 type="number"
                 :hint="'Páginas lidas em '+d2s(readDate)"
               />
             </q-popup-edit>
-          </span>de<span>
-            {{ book.pageCount }}
-            <q-popup-edit
+          </span> de
+          <span :class="book.edit?'edit':''">
+            {{ book.pageCount }}<q-popup-edit
               v-if="book.edit"
               v-model="book.pageCount"
             >
@@ -129,9 +146,8 @@
                 hint="Número de páginas no livro"
               />
             </q-popup-edit>
-          </span>
-          <span>
-            ({{ rate }}%)
+          </span> (<span class="edit">
+            {{ rate }}%
             <q-popup-edit :value="readPages">
               <q-input
                 :value="rate"
@@ -140,17 +156,17 @@
                 @change="irate($event.target.value)"
               />
             </q-popup-edit>
+          </span>)
+          em
+          <span class="edit">
+            {{ d2s(readDate) }}<q-popup-edit v-model="readDate">
+              <q-date
+                v-model="readDate"
+                :options="past"
+                :events="Object.keys(book.progress)"
+              />
+            </q-popup-edit>
           </span>
-        </div>
-        <div class="full-width">
-          lidos em {{ d2s(readDate) }}
-          <q-popup-edit v-model="readDate">
-            <q-date
-              v-model="readDate"
-              :options="past"
-              :events="Object.keys(book.progress)"
-            />
-          </q-popup-edit>
         </div>
         <div class="full-width">
           <q-slider
@@ -170,17 +186,26 @@
   background-repeat: no-repeat
   background-position: center
   background-size: cover
+.edit
+  border-bottom: 1px dotted gray
+  margin-bottom: -1px
+  &::after
+    content: '✏️'
+    position: absolute
+    font-size: 0.4em
+    transform: translateY(1em)
 </style>
 
 <script>
-import { date, QPopupEdit, QInput, QDate } from 'quasar'
-
+import { date, debounce, QPopupEdit, QInput, QDate } from 'quasar'
+require('assets/nocover.gif')
 QPopupEdit.options.props.contentClass = { default: 'q-pa-xs' }
 QPopupEdit.options.props.autoSave = { type: Boolean, default: true }
 QPopupEdit.options.props.buttons = { type: Boolean, default: true }
 QPopupEdit.options.props.labelSet = { type: String, default: 'Salvar' }
 QPopupEdit.options.props.labelCancel = { type: String, default: 'Cancelar' }
 QDate.options.props.minimal = { type: Boolean, default: true }
+QDate.options.props.flat = { type: Boolean, default: true }
 QInput.options.props.autofocus = { type: Boolean, default: true }
 
 export default {
@@ -189,13 +214,22 @@ export default {
   data: function () {
     return {
       options: [],
-      readDate: this.today(),
+      readDate: null,
       book: null
     }
   },
   computed: {
     rate () {
       return Math.round(100 * this.readPages / this.book.pageCount)
+    },
+    previsao () {
+      const t = this.today()
+      const r = this.scan(this.book.progress, t, true)
+      if (r && r < this.book.pageCount) {
+        const days = Math.round((this.book.pageCount - r) * this.readDates.length / r)
+        return this.d2s(date.addToDate(t, { days: days }))
+      }
+      return null
     },
     objetivo () {
       if (this.book.target) {
@@ -222,22 +256,45 @@ export default {
     },
     readDates () {
       return Object.keys(this.book.progress)
+    },
+    check: {
+      get: function () {
+        return this.scan(this.book.progress, this.today(), true) >= this.objetivo
+      },
+      set: function (v) {
+        this.readDate = this.today()
+        this.readPages = v ? this.objetivo : 0
+      }
     }
   },
   watch: {
     book: {
       handler () {
-        if (this.book && this.book.title) {
-          this.$q.localStorage.set(this.id, this.book)
-        }
+        debounce(this.save, 1000)()
       },
       deep: true
     }
   },
   mounted () {
-    this.book = this.df(this.$q.localStorage.getItem(this.id) || {})
+    const book = this.$q.localStorage.getItem(this.id)
+    this.book = this.df(book || {})
+    const t = this.today()
+    if (this.scan(this.book.progress, t) >= this.book.pageCount) {
+      this.readDate = date.getMaxDate(...this.readDates)
+    } else {
+      this.readDate = t
+    }
   },
   methods: {
+    save () {
+      if (this.book && this.book.title) {
+        this.$q.localStorage.set(this.id, this.book)
+      }
+    },
+    remove () {
+      this.$q.localStorage.remove(this.id)
+      this.book = null
+    },
     scan (progress, limit, include = false) {
       let r = 0, b = ''
       for (const [d, v] of Object.entries(progress)) {
@@ -249,23 +306,20 @@ export default {
       return r
     },
     today () {
-      const x = date.addToDate(new Date(), { hours: -12 })
-      return date.formatDate(new Date(x.getFullYear(), x.getMonth(), x.getDate()), 'YYYY/MM/DD')
-    },
-    remove () {
-      this.$q.localStorage.remove(this.id)
-      this.book = null
-      this.$emit('deleted')
+      return date.formatDate(date.addToDate(new Date(), { hours: -12 }), 'YYYY/MM/DD')
     },
     df (v) {
       const t = {
         edit: true,
         title: null,
         authors: null,
-        cover: 'https://picsum.photos/200/300',
+        cover: 'https://books.google.com.br/googlebooks/images/no_cover_thumb.gif',
         pageCount: 300,
         target: null,
         progress: {}
+      }
+      if (typeof v !== 'object') {
+        v = { title: v }
       }
       return Object.assign(t, v)
     },
@@ -273,14 +327,10 @@ export default {
       return d ? date.formatDate(d, 'DD/MM') : '--/--'
     },
     past (d) {
-      if (this.readDates.includes(d)) {
-        return true
-      }
-      return date.isBetweenDates(d, date.getMaxDate(...this.readDates), this.today(), { inclusiveTo: true })
+      return this.readDates.includes(d) || date.isBetweenDates(d, date.getMaxDate(...this.readDates), this.today(), { inclusiveTo: true })
     },
     irate (v) {
       const n = Math.round(v * this.book.pageCount / 100) || this.readPages
-      console.log(n)
       this.readPages = n
     },
     cache (x, update) {
@@ -295,6 +345,9 @@ export default {
         })
       })
     },
+    selectFn (value) {
+      this.book = this.df(value)
+    },
     filterFn (val, update, abort) {
       const x = 's_' + val
       if (val.length < 4) {
@@ -302,7 +355,7 @@ export default {
       } else if (this.$q.localStorage.has(x)) {
         this.cache(x, update)
       } else {
-        this.$axios.get('https://www.googleapis.com/books/v1/volumes', { params: { q: val, printType: 'books', maxResults: 40 } })
+        this.$axios.get('https://www.googleapis.com/books/v1/volumes', { params: { q: val, printType: 'books', maxResults: 20 } })
           .then(response => {
             this.$q.localStorage.set(x, response.data)
             this.cache(x, update)
