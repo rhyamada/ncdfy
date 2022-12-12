@@ -19,7 +19,7 @@
     "vuefire": "^2.2.2"
   },
   "devDependencies": {
-    "@quasar/app": "^1.9.5",
+    "@quasar/app": "^2.4.3",
     "babel-eslint": "^10.0.1",
     "eslint": "^6.8.0",
     "eslint-config-standard": "^14.1.0",
